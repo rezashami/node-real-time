@@ -39,6 +39,7 @@ io.on('connection', (socket) => {
     socket.on('login',(variable)=>{
       if(numUsers == 1)
       {
+        console.log('Server full');
         socket.disconnect(true);
       }
       numUsers++;

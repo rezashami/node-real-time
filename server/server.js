@@ -36,22 +36,23 @@ var getServerCode = () =>{
 
 io.on('connection', (socket) => {
     console.log('User Connected!!');
+    numUsers++;
     socket.on('login',(variable)=>{
-      if(numUsers == 1)
+      if(numUsers > 1)
       {
         console.log('Server full');
+        socket.emit('full');
         socket.disconnect(true);
       }
-      numUsers++;
-      console.log(variable);
-      socket.emit('response',{string:getServerCode()});
+      else{
+        console.log(variable);
+        socket.emit('response',{string:getServerCode()});
+      }
+      
     });
     socket.on('disconnect', () => {
       console.log('User disconnected');
-      if(numUsers != 0)
-      {
-        numUsers--;
-      }
+      numUsers--;
     });
 });
 

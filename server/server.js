@@ -11,11 +11,46 @@ var server = http.createServer(app);
 var io = socketIO(server);
 
 
-var salt = CryptoJS.enc.Utf8.parse("iasbs.ac.ir");
-var password = "134";
-var keyBits = CryptoJS.PBKDF2(password, salt, {hasher: CryptoJS.algo.SHA1,keySize: 8,iterations: 2048});
+var aesCrypto = {};
 
-var iv = CryptoJS.enc.Base64.parse("Q9AnLe2Yl4l4/8P/zn4YyQ==");
+(function (obj) {
+  "use strict";
+
+  obj.formatter = {
+    prefix: 'AESCryptoV10',
+    stringify: function (params) {
+      var str = this.prefix;
+      str += params.salt.toString();
+      str += params.ciphertext.toString();
+      return str;
+    },
+    parse: function (str) {
+      var params = CryptoJS.lib.CipherParams.create({}),
+        prefixLen = this.prefix.length;
+
+      if (str.indexOf(this.prefix) !== 0) { return params; }
+
+      params.ciphertext = CryptoJS.enc.Hex.parse(str.substring(16 + prefixLen));
+      params.salt = CryptoJS.enc.Hex.parse(str.substring(prefixLen, 16 + prefixLen));
+      return params;
+    }
+  };
+
+  obj.encrypt = function (text, password) {
+    try {
+      return CryptoJS.AES.encrypt(text, password, { format: obj.formatter }).toString();
+    } catch (err) { return ''; }
+  };
+
+  obj.decrypt = function (text, password) {
+    try {
+      var decrypted = CryptoJS.AES.decrypt(text, password, { format: obj.formatter });
+      return decrypted.toString(CryptoJS.enc.Utf8);
+    } catch (err) { return ''; }
+  };
+}(aesCrypto));
+
+
 
 app.use(express.static(publicPath));
 
@@ -26,12 +61,12 @@ var numUsers = 0;
 
 var getServerCode = () =>{
    
-  var x = CryptoJS.AES.encrypt('The Server is RUnniNg',keyBits,{
-    iv: iv,
-    padding: CryptoJS.pad.Pkcs7,
-    mode: CryptoJS.mode.CBC
-  });
-  return x.toString();
+  var x = aesCrypto.encrypt('Server','pass');
+  return x;
+}
+var getUserName=()=>{
+  var x= aesCrypto.encrypt('Server','pass');
+  return x;
 }
 
 io.on('connection', (socket) => {
@@ -45,10 +80,18 @@ io.on('connection', (socket) => {
         socket.disconnect(true);
       }
       else{
-        console.log(variable);
+        console.log('Variable is: '+variable);
+        console.log('Reza is: '+getUserName());
+        console.log('server is: '+ getServerCode());
+        console.log('\n');
         socket.emit('response',{string:getServerCode()});
       }
       
+    });
+    socket.on('new message',(message)=>{
+      console.log(message);
+      console.log(aesCrypto.decrypt(message,'pass'));
+      socket.broadcast.emit('message',message);
     });
     socket.on('disconnect', () => {
       console.log('User disconnected');

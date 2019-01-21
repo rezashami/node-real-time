@@ -1,15 +1,22 @@
+/**
+ * Require section is here
+ */
 const path = require('path');
 const http = require('http');
 const express = require('express');
 const socketIO = require('socket.io');
 var CryptoJS = require("crypto-js");
-
+/**
+ * Soem global variables
+ */
 const port = process.env.PORT || 3000;
-const publicPath = path.join(__dirname,'../public');
+const publicPath = path.join(__dirname, '../public');
 var app = express();
 var server = http.createServer(app);
 var io = socketIO(server);
-
+/**
+ * Some code for use aes enc/dec easier
+ */
 
 var aesCrypto = {};
 
@@ -28,7 +35,9 @@ var aesCrypto = {};
       var params = CryptoJS.lib.CipherParams.create({}),
         prefixLen = this.prefix.length;
 
-      if (str.indexOf(this.prefix) !== 0) { return params; }
+      if (str.indexOf(this.prefix) !== 0) {
+        return params;
+      }
 
       params.ciphertext = CryptoJS.enc.Hex.parse(str.substring(16 + prefixLen));
       params.salt = CryptoJS.enc.Hex.parse(str.substring(prefixLen, 16 + prefixLen));
@@ -38,102 +47,161 @@ var aesCrypto = {};
 
   obj.encrypt = function (text, password) {
     try {
-      return CryptoJS.AES.encrypt(text, password, { format: obj.formatter }).toString();
-    } catch (err) { return ''; }
+      return CryptoJS.AES.encrypt(text, password, {
+        format: obj.formatter
+      }).toString();
+    } catch (err) {
+      return '';
+    }
   };
 
   obj.decrypt = function (text, password) {
     try {
-      var decrypted = CryptoJS.AES.decrypt(text, password, { format: obj.formatter });
+      var decrypted = CryptoJS.AES.decrypt(text, password, {
+        format: obj.formatter
+      });
       return decrypted.toString(CryptoJS.enc.Utf8);
-    } catch (err) { return ''; }
+    } catch (err) {
+      return '';
+    }
   };
 }(aesCrypto));
 
 
+// Config path for static usage
 
 app.use(express.static(publicPath));
 
-// Chatroom
+// Socket variables
 
-var numUsers = 0;
-var numHost =0;
-var numAndroid = 0;
+var androidSocket = null;
+var raspSocket = null;
 
-
-var getCode = (code) =>{
-  var x = aesCrypto.encrypt(code,'pass');
+/**
+ * Method for encrypting string
+ * @param code is input of method
+ */
+var getEncrypt = (code) => {
+  var x = aesCrypto.encrypt(code, 'pass');
   return x;
 }
-var getUserName=(s)=>{
-  var x= aesCrypto.decrypt(s,'pass');
+/**
+ * Mthod for 
+ * @param  s is input of method
+ */
+var getDecrypt = (s) => {
+  var x = aesCrypto.decrypt(s, 'pass');
   return x;
 }
 
+/**
+ * Main section of code
+ */
 io.on('connection', (socket) => {
-    console.log('User Connected!!');
-    numUsers++;
-    console.log('total User: '+ numUsers);
-    socket.on('login',(variable)=>{
-      numAndroid++;
-      if(numUsers > 2 || numAndroid >1)
-      {
-        console.log('Server full');
-        socket.emit('full');
-        socket.disconnect(true);
-      }
-      else{
-        console.log('Android user is: '+getUserName(variable));
-        console.log('\n');
-        if(getUserName(variable) === 'Reza')
-          socket.emit('response',{string:getCode('Server')});
-        else
-          socket.emit('response',{string:getCode('NoAuth')})
-      }
-      
-    });
-    socket.on('host-login',(variable)=>{
-      numHost++;
-      if(numUsers > 2 || numHost >1)
-      {
-        console.log('Server full');
-        socket.emit('full');
-        socket.disconnect(true);
-      }
-      else{
-        console.log('Host user is: '+getUserName(variable));
-        console.log('\n');
-        if(getUserName(variable) === 'Host')
-          socket.emit('response',{string:getCode('Server')});
-        else
-        {
-          socket.emit('response',{string:getCode('NoAuth')});
-          numHost--;
-        }
-          
-          
-      }
+  console.log('User Connected!!');
+  var isAndroid = false;
+  var isRasp = false;
+  /**
+   * This method used for authentecation android user and saved info for other send
+   * @param cadrInfo is contain user name and password
+   */
+  socket.on('android-login', (cadrInfo) => {
+    var userName = cadrInfo.userName;
+    var password = cadrInfo.password;
+    if (getDecrypt(userName) != "Android" || getEncrypt(password) != "admin123") {
+      console.log('This is not Android');
+      socket.emit('No-Auth');
+      socket.disconnect();
+    } else { 
+      console.log('Hello Android!!');
+      socket.emit('welcome-android');
+      androidSocket = socket;
+      isAndroid = true;
+    }
+  });
 
-    });
-    socket.on('new message',(message)=>{
-      console.log(message);
-      console.log(aesCrypto.decrypt(message,'pass'));
-      socket.broadcast.emit('message',message);
-    });
-    socket.on('disconnect', () => {
-      console.log('User disconnected');
-      if(numAndroid>0)
-          numAndroid--;
-      if(numHost>0)
-          numHost--;
-      numUsers--;
-    });
+  /**
+   * This method used for authentecation rasp user and saved info for other send
+   * @param raspInfo is contain user name and password
+   */
+  socket.on('rasp-login',(raspInfo)=>{
+    var userName = raspInfo.userName;
+    var password = raspInfo.password;
+    if (getDecrypt(userName) != "Rasp" || getEncrypt(password) != "admin123") {
+      console.log('This is not rasp');
+      socket.emit('No-Auth');
+      socket.disconnect();
+    } else { 
+      console.log('Hello Rasp!!!');
+      socket.emit('welcome-rasp');
+      raspSocket = socket;
+      isRasp = true;
+    }
+  });
+
+  /**
+   * This method is used for getting command from android user and send it to rasp user
+   * @param command is represent a command that send to rasp
+   */
+  socket.on('send-command', (command) => {
+    var trueCommand = getDecrypt(command);
+    console.log(trueCommand);
+    if(raspSocket == null)
+    {
+      socket.emit('No-rasp');
+    }
+    else if(isRasp == false)
+    {
+      socket.emit('Rasp-disconnected');
+    }
+    else{
+      raspSocket.emit('NewCommand',command);
+      socket.emit('Sended-Command');
+    }
+    
+  });
+
+  /**
+   * This method using for getting tempratuer infromation
+   * @param tempObj is an object encrypted by aes, and contain temp and hit
+   */
+  socket.on('temp',(tempObj)=>{
+    var treuTempObj = getDecrypt(tempObj);
+    console.log(JSON.stringify(treuTempObj));
+    if(androidSocket == null)
+    {
+      socket.emit('No-android');
+    }
+    else if(isAndroid == false)
+    {
+      socket.emit('Android-disconnected');
+    }
+    else{
+      androidSocket.emit('NewTemp',tempObj);
+      socket.emit('Sended-temp');
+    }
+  });
+  
+  /**
+   * This method used when socket is disconnected
+   */
+  socket.on('disconnect', () => {
+    if(isAndroid)
+    {
+      isAndroid = false;
+      androidSocket = null;
+    }
+    else if(isRasp)
+    {
+      isRasp = false;
+      raspSocket = null;
+    }
+  });
 });
 
- 
-
-
-server.listen(port,()=>{
-    console.log(`Server is runnig on ${port}`);
+/**
+ * Starting server on port variable
+ */
+server.listen(port, () => {
+  console.log(`Server is runnig on ${port}`);
 });
-

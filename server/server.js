@@ -76,6 +76,8 @@ app.use(express.static(publicPath));
 
 var androidSocket = null;
 var raspSocket = null;
+var isAndroid = false;
+var isRasp = false;
 
 /**
  * Method for encrypting string
@@ -99,22 +101,25 @@ var getDecrypt = (s) => {
  */
 io.on('connection', (socket) => {
   console.log('User Connected!!');
-  var isAndroid = false;
-  var isRasp = false;
+  
   /**
    * This method used for authentecation android user and saved info for other send
    * @param cadrInfo is contain user name and password
    */
   socket.on('android-login', (cadrInfo) => {
-    var userName = cadrInfo.userName;
-    var password = cadrInfo.password;
-    if (getDecrypt(userName) != "Android" || getEncrypt(password) != "admin123") {
+    var data = JSON.parse(getDecrypt(cadrInfo));
+    var userName = data[0];
+    var password = data[1];
+    console.log(userName+" and "+password +" asas "+ getDecrypt(cadrInfo));
+    if (userName!= "Android" || password != "admin123") {
       console.log('This is not Android');
       socket.emit('No-Auth');
       socket.disconnect();
     } else { 
       console.log('Hello Android!!');
       socket.emit('welcome-android');
+      console.log('raspChecek ' + raspSocket != null);
+      console.log('IsraspChecek ' + isRasp === true);
       if(raspSocket != null && isRasp == true)
       {
         raspSocket.emit('welcome-rasp');
@@ -214,11 +219,13 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     if(isAndroid)
     {
+      console.log('Android left');
       isAndroid = false;
       androidSocket = null;
     }
     else if(isRasp)
     {
+      console.log('Rasp left');
       isRasp = false;
       raspSocket = null;
     }

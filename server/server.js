@@ -115,6 +115,10 @@ io.on('connection', (socket) => {
     } else { 
       console.log('Hello Android!!');
       socket.emit('welcome-android');
+      if(raspSocket != null && isRasp == true)
+      {
+        raspSocket.emit('welcome-rasp');
+      }
       androidSocket = socket;
       isAndroid = true;
     }
@@ -125,15 +129,20 @@ io.on('connection', (socket) => {
    * @param raspInfo is contain user name and password
    */
   socket.on('rasp-login',(raspInfo)=>{
-    var userName = raspInfo.userName;
-    var password = raspInfo.password;
-    if (getDecrypt(userName) != "Rasp" || getEncrypt(password) != "admin123") {
+    var data = JSON.parse(getDecrypt(raspInfo));
+    var userName = data.userName;
+    var password = data.password;
+    if (userName != "Rasp" || password != "admin123") {
       console.log('This is not rasp');
       socket.emit('No-Auth');
       socket.disconnect();
     } else { 
       console.log('Hello Rasp!!!');
       socket.emit('welcome-rasp');
+      if(androidSocket != null && isAndroid == true)
+      {
+        androidSocket.emit('welcome-android');
+      }
       raspSocket = socket;
       isRasp = true;
     }
@@ -181,7 +190,24 @@ io.on('connection', (socket) => {
       socket.emit('Sended-temp');
     }
   });
-  
+  socket.on('error-temp',(err)=>{
+    const data = getDecrypt(err);
+    var objs = JSON.parse(data);
+    console.log(objs);
+    if(androidSocket == null)
+    {
+      socket.emit('No-android');
+    }
+    else if(isAndroid == false)
+    {
+      socket.emit('Android-disconnected');
+    }
+    else{
+      androidSocket.emit('TempError',err);
+      socket.emit('Sended-error');
+    }
+  });
+
   /**
    * This method used when socket is disconnected
    */

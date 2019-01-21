@@ -57,36 +57,63 @@ app.use(express.static(publicPath));
 // Chatroom
 
 var numUsers = 0;
+var numHost =0;
+var numAndroid = 0;
 
 
-var getServerCode = () =>{
-   
-  var x = aesCrypto.encrypt('Server','pass');
+var getCode = (code) =>{
+  var x = aesCrypto.encrypt(code,'pass');
   return x;
 }
-var getUserName=()=>{
-  var x= aesCrypto.encrypt('Server','pass');
+var getUserName=(s)=>{
+  var x= aesCrypto.decrypt(s,'pass');
   return x;
 }
 
 io.on('connection', (socket) => {
     console.log('User Connected!!');
     numUsers++;
+    console.log('total User: '+ numUsers);
     socket.on('login',(variable)=>{
-      if(numUsers > 1)
+      numAndroid++;
+      if(numUsers > 2 || numAndroid >1)
       {
         console.log('Server full');
         socket.emit('full');
         socket.disconnect(true);
       }
       else{
-        console.log('Variable is: '+variable);
-        console.log('Reza is: '+getUserName());
-        console.log('server is: '+ getServerCode());
+        console.log('Android user is: '+getUserName(variable));
         console.log('\n');
-        socket.emit('response',{string:getServerCode()});
+        if(getUserName(variable) === 'Reza')
+          socket.emit('response',{string:getCode('Server')});
+        else
+          socket.emit('response',{string:getCode('NoAuth')})
       }
       
+    });
+    socket.on('host-login',(variable)=>{
+      numHost++;
+      if(numUsers > 2 || numHost >1)
+      {
+        console.log('Server full');
+        socket.emit('full');
+        socket.disconnect(true);
+      }
+      else{
+        console.log('Host user is: '+getUserName(variable));
+        console.log('\n');
+        if(getUserName(variable) === 'Host')
+          socket.emit('response',{string:getCode('Server')});
+        else
+        {
+          socket.emit('response',{string:getCode('NoAuth')});
+          numHost--;
+        }
+          
+          
+      }
+
     });
     socket.on('new message',(message)=>{
       console.log(message);
@@ -95,6 +122,10 @@ io.on('connection', (socket) => {
     });
     socket.on('disconnect', () => {
       console.log('User disconnected');
+      if(numAndroid>0)
+          numAndroid--;
+      if(numHost>0)
+          numHost--;
       numUsers--;
     });
 });

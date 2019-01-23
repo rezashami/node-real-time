@@ -112,6 +112,11 @@ io.on('connection', (socket) => {
    * @param cadrInfo is contain user name and password
    */
   socket.on('android-login', (cadrInfo) => {
+    if (isAndroid) {
+      socket.emit('No-Auth');
+      socket.disconnect();
+      return;
+    }
     var data = JSON.parse(getDecrypt(cadrInfo));
     var userName = data[0];
     var password = data[1];
@@ -139,6 +144,11 @@ io.on('connection', (socket) => {
    * @param raspInfo is contain user name and password
    */
   socket.on('rasp-login',(raspInfo)=>{
+    if (isRasp) {
+      socket.emit('No-Auth');
+      socket.disconnect();
+      return;
+    }
     var data = JSON.parse(getDecrypt(raspInfo));
     var userName = data.userName;
     var password = data.password;
@@ -242,30 +252,4 @@ io.on('connection', (socket) => {
  */
 server.listen(port, () => {
   console.log(`Server is runnig on ${port}`);
-});
-app.post('/goto',(req,res)=>{
-  var body = req.body;
-  //console.log(body);
-  if(body == undefined)
-  {
-    res.status(400).send("Error");
-    return;
-  }
-  else if(body.message ==undefined)
-  {
-    res.status(400).send("Error");
-    return;
-  }
-  //console.log(body.message);
-  var temp = JSON.parse(getDecrypt(body.message));
-  var userName = temp.userName;
-  var password = temp.password;
-  if (password == "admin123",userName == "Android") {
-    res.send({redirect: '/main.html'});
-    console.log('Redirecting');
-    return;
-  }
-  else{
-    res.send({redirect: '/error.html'});
-  }
 });

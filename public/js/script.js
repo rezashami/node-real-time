@@ -95,5 +95,6 @@ socket.on('No-Auth',function () {
 });
 socket.on("welcome-android", function () {
     console.log("welcome");
-    window.location.replace(window.location.protocol + "//" + window.location.host + "/main.html");
+    $("#searchForm").hide();
+    $("#menu").show();
 });

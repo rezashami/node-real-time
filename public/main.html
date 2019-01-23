@@ -11,17 +11,6 @@
     <script src="js/script.js"></script>
 </head>
 <body>
-    <button id="onBtn">Send on command</button>
-    <button id="offBtn">Send off command</button>
-    <p id="info"></p>
-    <script>
-        $("#offBtn").click(function(){
-            socket.emit("send-command", getEncrypt("OFF"));
-        });
-        $("#onBtn").click(function(){
-            socket.emit("send-command", getEncrypt("ON"));
-        });
-
-    </script>
+    
 </body>
 </html>

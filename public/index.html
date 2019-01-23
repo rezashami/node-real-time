@@ -17,10 +17,25 @@
 	
 		
 </form>
-<!-- the result of the search will be rendered inside this div -->
-<div id="result"></div>
+<div id= "menu">
+<button id="onBtn">Send on command</button>
+    <button id="offBtn">Send off command</button>
+    <p id="info"></p>
+    <script>
+        $("#offBtn").click(function(){
+            socket.emit("send-command", getEncrypt("OFF"));
+        });
+        $("#onBtn").click(function(){
+            socket.emit("send-command", getEncrypt("ON"));
+        });
+
+	</script>
+</div>
  
 <script>
+	$(document).ready(function(){
+		$("#menu").hide();
+	});
 // Attach a submit handler to the form
 $( "#searchForm" ).submit(function( event ) {
  

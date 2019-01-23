@@ -114,29 +114,31 @@ io.on('connection', (socket) => {
   socket.on('android-login', (cadrInfo) => {
     if (isAndroid) {
       socket.emit('No-Auth');
-      socket.disconnect();
-      return;
     }
-    var data = JSON.parse(getDecrypt(cadrInfo));
-    var userName = data[0];
-    var password = data[1];
-    console.log(userName+" and "+password +" asas "+ getDecrypt(cadrInfo));
-    if (userName!= "Android" || password != "admin123") {
-      console.log('This is not Android');
-      socket.emit('No-Auth');
-      socket.disconnect();
-    } else { 
-      console.log('Hello Android!!');
-      socket.emit('welcome-android');
-      console.log('raspChecek ' + raspSocket != null);
-      console.log('IsraspChecek ' + isRasp === true);
-      if(raspSocket != null && isRasp == true)
-      {
-        raspSocket.emit('welcome-rasp');
+    else
+    {
+      var data = JSON.parse(getDecrypt(cadrInfo));
+      var userName = data[0];
+      var password = data[1];
+      console.log(userName+" and "+password +" asas "+ getDecrypt(cadrInfo));
+      if (userName!= "Android" || password != "admin123") {
+        console.log('This is not Android');
+        socket.emit('No-Auth');
+        socket.disconnect();
+      } else { 
+        console.log('Hello Android!!');
+        socket.emit('welcome-android');
+        console.log('raspChecek ' + raspSocket != null);
+        console.log('IsraspChecek ' + isRasp == true);
+        if(raspSocket != null && isRasp == true)
+        {
+          raspSocket.emit('welcome-rasp');
+        }
+        androidSocket = socket;
+        isAndroid = true;
       }
-      androidSocket = socket;
-      isAndroid = true;
     }
+    
   });
 
   /**
@@ -144,11 +146,6 @@ io.on('connection', (socket) => {
    * @param raspInfo is contain user name and password
    */
   socket.on('rasp-login',(raspInfo)=>{
-    if (isRasp) {
-      socket.emit('No-Auth');
-      socket.disconnect();
-      return;
-    }
     var data = JSON.parse(getDecrypt(raspInfo));
     var userName = data.userName;
     var password = data.password;
@@ -232,13 +229,13 @@ io.on('connection', (socket) => {
    * This method used when socket is disconnected
    */
   socket.on('disconnect', () => {
-    if(isAndroid)
+    if(socket == androidSocket)
     {
       console.log('Android left');
       isAndroid = false;
       androidSocket = null;
     }
-    else if(isRasp)
+    else if(socket == raspSocket)
     {
       console.log('Rasp left');
       isRasp = false;

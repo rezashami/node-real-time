@@ -84,11 +84,13 @@ socket.on('Sended-Command',function () {
 
 socket.on('NewTemp',function (temp) {
     var x = getDecrypt(temp);
-   $("#info").html = x;
+    console.log(x);
+   $("#info").html(x);
 });
 socket.on('TempError',function (error) {
     var x = getDecrypt(error);
-   $("#info").html = x;
+    console.log(x);
+   $("#info").html(x);
 });
 socket.on('No-Auth',function () {
     console.log('Error in authentiacion');

@@ -14,6 +14,11 @@ const publicPath = path.join(__dirname, '../public');
 var app = express();
 var server = http.createServer(app);
 var io = socketIO(server);
+var bodyParser = require('body-parser')
+app.use( bodyParser.json() );       // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
+  extended: true
+})); 
 /**
  * Some code for use aes enc/dec easier
  */
@@ -69,7 +74,7 @@ var aesCrypto = {};
 
 
 // Config path for static usage
-
+//app.use(express.json());
 app.use(express.static(publicPath));
 
 // Socket variables
@@ -237,4 +242,30 @@ io.on('connection', (socket) => {
  */
 server.listen(port, () => {
   console.log(`Server is runnig on ${port}`);
+});
+app.post('/goto',(req,res)=>{
+  var body = req.body;
+  //console.log(body);
+  if(body == undefined)
+  {
+    res.status(400).send("Error");
+    return;
+  }
+  else if(body.message ==undefined)
+  {
+    res.status(400).send("Error");
+    return;
+  }
+  //console.log(body.message);
+  var temp = JSON.parse(getDecrypt(body.message));
+  var userName = temp.userName;
+  var password = temp.password;
+  if (password == "admin123",userName == "Android") {
+    res.send({redirect: '/main.html'});
+    console.log('Redirecting');
+    return;
+  }
+  else{
+    res.send({redirect: '/error.html'});
+  }
 });

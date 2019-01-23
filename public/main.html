@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Main</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
+    <script src="js/script.js"></script>
+</head>
+<body>
+    <button id="onBtn">Send on command</button>
+    <button id="offBtn">Send off command</button>
+    <p id="info"></p>
+    <script>
+        $("#offBtn").click(function(){
+            socket.emit("send-command", getEncrypt("OFF"));
+        });
+        $("#onBtn").click(function(){
+            socket.emit("send-command", getEncrypt("ON"));
+        });
+
+    </script>
+</body>
+</html>
